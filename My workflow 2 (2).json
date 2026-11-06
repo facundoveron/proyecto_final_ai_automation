@@ -1,0 +1,926 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -224
+      ],
+      "id": "518b6f05-66df-4fa4-99d8-d218e7a304bc",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "dataSourceId": {
+          "__rl": true,
+          "value": "e3128260-914b-448c-878c-2c16c4c7d863",
+          "mode": "list",
+          "cachedResultName": "Pendientes",
+          "cachedResultUrl": "https://app.notion.com/p/0db88401ef7e4c30bbe1921111e3639c"
+        },
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Estado|status",
+              "condition": "does_not_equal",
+              "optionValue": "Completado"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 3,
+      "position": [
+        96,
+        -224
+      ],
+      "id": "dbe9c8b4-4671-478b-8c30-66e2f07fa50b",
+      "name": "Get many database pages",
+      "retryOnFail": true,
+      "waitBetweenTries": 605,
+      "credentials": {
+        "notionApi": {
+          "id": "2ONlFLClsLm5uWDD",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2bad274d-d059-4f03-b94c-d4bdc7f08413",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "935062cc-19f5-45b6-be5e-ffbb4b6e354c",
+              "name": "tarea",
+              "value": "={{ $json.property_nombre_de_la_tarea }}",
+              "type": "string"
+            },
+            {
+              "id": "cb5a2d8f-db2f-414f-973a-b44c1b00d325",
+              "name": "area",
+              "value": "={{ $json.property_area }}",
+              "type": "array"
+            },
+            {
+              "id": "745908b9-3ea8-4504-a685-281ea960af32",
+              "name": "tipo_tarea",
+              "value": "={{ $json.property_tipo_de_tarea }}",
+              "type": "array"
+            },
+            {
+              "id": "08a5d6ea-8f65-40d6-a8b2-e9dc40f56297",
+              "name": "objetivo",
+              "value": "={{ $json.property_objetivo_principal }}",
+              "type": "string"
+            },
+            {
+              "id": "16f73da4-9cd5-4644-bde2-70d1370f1e78",
+              "name": "entregable",
+              "value": "={{ $json.property_entregable_esperado }}",
+              "type": "string"
+            },
+            {
+              "id": "71cfa611-b3ec-44bd-87f8-c1049e5d0193",
+              "name": "fin",
+              "value": "={{ $json.property_fecha_limitada.start }}",
+              "type": "string"
+            },
+            {
+              "id": "7cd00738-fb8d-4c23-8989-54323e19ab52",
+              "name": "esfuerzo",
+              "value": "={{ $json.property_esfuerzo_estimado }}",
+              "type": "string"
+            },
+            {
+              "id": "3d2a4cec-6cf5-42f1-a659-7b21be81c695",
+              "name": "estado",
+              "value": "={{ $json.property_estado }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        240,
+        -224
+      ],
+      "id": "67d9aa02-49e9-4f7e-8be6-ca1fd4171422",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items\n  .filter(item => {\n    const tarea = item.json;\n\n    return Object.values(tarea).every(valor => {\n      // Rechazar null o undefined\n      if (valor === null || valor === undefined) return false;\n\n      // Rechazar strings vacíos\n      if (typeof valor === \"string\" && valor.trim() === \"\") return false;\n\n      // Rechazar arrays vacíos\n      if (Array.isArray(valor) && valor.length === 0) return false;\n\n      return true;\n    });\n  })\n  .map(item => {\n    const tarea = item.json;\n\n    // Fecha actual (sin hora)\n    const hoy = new Date();\n    hoy.setHours(0, 0, 0, 0);\n\n    // Fecha de finalización\n    const fechaFin = new Date(tarea.fin + \"T00:00:00\");\n\n    // Diferencia en días\n    const diasRestantes = Math.ceil(\n      (fechaFin - hoy) / (1000 * 60 * 60 * 24)\n    );\n\n    return {\n      json: {\n        ...tarea,\n        dias_restantes: diasRestantes,\n        vencida: diasRestantes < 0,\n        estado_fecha: diasRestantes < 0\n          ? \"Vencida\"\n          : diasRestantes === 0\n            ? \"Vence hoy\"\n            : \"En plazo\"\n      }\n    };\n  });"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        -32
+      ],
+      "id": "f18295c1-09d2-4bfd-a54e-cdfde55189d5",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Eres un sistema experto en productividad, optimización del aprendizaje y gestión de proyectos para ingenieros de software en transición a Data Science.\n\nAnaliza la siguiente tarea y genera un enriquecimiento estructurado enfocado en maximizar la práctica activa y el cumplimiento de entregables.\n\nDATOS DE ENTRADA:\n- Id : {{ $json.id }}\n- Tarea: {{ $json.tarea }}\n- Área: {{ $json.area }}\n- Tipo de Tarea: {{ $json.tipo_tarea }}\n- Objetivo Principal: {{ $json.objetivo }}\n- Entregable Esperado: {{ $json.entregable }}\n- Fecha Límite: {{ $json.fin }}\n- Días Restantes: {{ $json.dias_restantes }}\n- Esfuerzo Estimado: {{ $json.esfuerzo }}\n\nREGLAS DE EVALUACIÓN:\n1. Si el Objetivo Principal es \"Career Switch (DS)\" y el Tipo es \"Lectura/Teoría\", prioriza sugerir la conversión de esa teoría en una práctica concreta (ej. \"Crear un Jupyter Notebook probando el concepto\").\n2. Evalúa la Prioridad Sugerida considerando la combinación entre Días Restantes y el Aporte de Valor al Objetivo Principal.\n3. El desglose de subtareas debe ser ejecutable (máximo 4 subtareas accionables).\n\nRESPONDE ÚNICAMENTE EN FORMATO JSON CON ESTA ESTRUCTURA:\n{\n  \"id\": {{ $json.id }},\n  \"nombre\": {{ $json.tarea }},\n \"resumen\": {\n  \"prioridad_sugerida\": \"P1 | P2 | P3\",\n  \"razon_prioridad\": \"Breve explicación de 1 oración del porqué de la prioridad\",\n  \"estrategia_aprendizaje\": \"Estrategia puntual (ej: Aplicar método Feynman, Codificar prototipo rápido, Lectura enfocada a índice)\",\n  \"subtareas\": [\n    \"Paso 1...\",\n    \"Paso 2...\",\n    \"Paso 3...\"\n  ],\n  \"sugerencia_practica\": \"Acción concreta para convertir esta tarea en un activo práctico o código si aplica\"\n  }\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        64,
+        -32
+      ],
+      "id": "a48564bb-28f2-4577-a7a1-c2658beb39b6",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "waitBetweenTries": 600,
+      "alwaysOutputData": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        64,
+        144
+      ],
+      "id": "19b0d5dd-eef1-4e86-98ca-83e46b236a1d",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Hbzqtu1CkZQda9Y1",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Code in JavaScript').item.json.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        160,
+        288
+      ],
+      "id": "7e365c8c-41a1-4727-9311-5964fd12a74f",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Eres un sistema experto en gestión de proyectos, automatización y productividad (PKM). Tu trabajo es tomar el análisis de una tarea previa, compararlo con el estado actual del Dashboard de tareas, y generar la salida estructurada lista para insertarse en el sistema.\n\n### 1. CONTEXTO DEL DASHBOARD (Estado Actual RAG)\nA continuación se presentan las tareas actualmente registradas en el sistema y sus estados:\n{{ $json.tareas_dashboard_actuales }}\n\n### 2. ANÁLISIS DE ENTRADA (Salida de la IA anterior)\n{{ $json.output }}\n\n---\n\n### INSTRUCCIONES\n1. Evalúa el análisis recibido junto con las tareas actualmente en ejecución en el Dashboard.\n2. Genera una lista de acciones/subtareas concretas a agendar en el Dashboard.\n3. Determina las fechas límite (`fecha_inicio` y `fecha_fin`) ajustadas en formato YYYY-MM-DD según la estrategia recomendada y sin entrar en colisión crítica con tareas del Dashboard actual.\n4. Asigna un `estado` inicial estándar a cada elemento (ej: \"Sin empezar\", \"En progreso\", \"Pendiente\").\n5. Asegúrate de incluir la tarea principal con su resumen y las subtareas derivadas si corresponden.\n\n---\n\n### RESTRICCIÓN DE SALIDA (CRÍTICO)\nResponde ÚNICAMENTE con un array de objetos JSON que cumpla exactamente la siguiente estructura. No incluyas texto explicativo, introducciones ni markdown fuera de la etiqueta de código `json`.\n\n[\n  {\n    \"nombre_tarea\": \"Nombre claro y conciso de la tarea o subtarea\",\n    \"fecha_inicio\": \"YYYY-MM-DD\",\n    \"fecha_fin\": \"YYYY-MM-DD\",\n    \"estado\": \"Sin empezar\"#todas asi,\n    \"prioridad\": \"Alta-Baja\"#segun el analisis,\n    \"area\": \"Ciencia de Datos\",\n    \"descripcion_estrategia\": \"Breve resumen de 1-2 oraciones del abordaje recomendado\"\n  }\n]",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        784,
+        80
+      ],
+      "id": "e02e1dc3-b240-4bc8-bf68-7a8aaed11d6d",
+      "name": "AI Agent1",
+      "retryOnFail": true,
+      "waitBetweenTries": 600,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        784,
+        288
+      ],
+      "id": "b838120a-65e5-459d-a811-38e41b7d2382",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Hbzqtu1CkZQda9Y1",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "dataSourceId": {
+          "__rl": true,
+          "value": "78dd7923-dfc0-8240-860b-07cde4304c04",
+          "mode": "list",
+          "cachedResultName": "Dashboard",
+          "cachedResultUrl": "https://app.notion.com/p/40fd7923dfc0801a9198e552519b98e0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 3,
+      "position": [
+        912,
+        -464
+      ],
+      "id": "7aa992f8-d78c-4b5c-99b9-04e5d5a45e66",
+      "name": "Get many database pages1",
+      "credentials": {
+        "notionApi": {
+          "id": "2ONlFLClsLm5uWDD",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const tareasActuales = $input.all().map(item => {\n  const data = item.json;\n  \n  return {\n    id: data.id || null,\n    nombre: data.property_task_name || data.name || \"Sin título\",\n    estado: data.property_estado || \"Sin estado\",\n    inicio: data.property_comienzo?.start || null,\n    fin: data.property_fin?.start || null,\n    area: data.property_area || \"General\",\n    descripcion: data.property_descripcion || \"\"\n  };\n});\n\nreturn [{\n  json: {\n    tareas_dashboard_actuales: tareasActuales\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        -464
+      ],
+      "id": "d4d6d5d0-d58f-4af0-94df-f3113d4f0146",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "dataSourceId": {
+          "__rl": true,
+          "value": "78dd7923-dfc0-8240-860b-07cde4304c04",
+          "mode": "list",
+          "cachedResultName": "Dashboard",
+          "cachedResultUrl": "https://app.notion.com/p/40fd7923dfc0801a9198e552519b98e0"
+        },
+        "title": "={{ $json.nombre_tarea }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Descripcion|rich_text",
+              "textContent": "={{ $json.descripcion_estrategia }}"
+            },
+            {
+              "key": "Task name|title",
+              "title": "={{ $json.nombre_tarea }}"
+            },
+            {
+              "key": "Comienzo|date",
+              "includeTime": false,
+              "date": "={{ $json.fecha_inicio }}"
+            },
+            {
+              "key": "Fin|date",
+              "date": "={{ $json.fecha_fin }}"
+            },
+            {
+              "key": "Area|select",
+              "selectValue": "={{ $json.area }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 3,
+      "position": [
+        1248,
+        32
+      ],
+      "id": "adfa467c-d3a9-483f-adf2-e0e4e74b6c52",
+      "name": "Create a database page",
+      "credentials": {
+        "notionApi": {
+          "id": "2ONlFLClsLm5uWDD",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputs = $input.all();\n\nlet allTasks = [];\n\nfor (const item of inputs) {\n  let response = item.json;\n\n  // Extraemos el contenido\n  let content = response.output ?? response.text ?? response;\n\n  // Si viene como string, limpiamos Markdown y parseamos JSON\n  if (typeof content === 'string') {\n\n    // Eliminamos los bloques Markdown ```json y ```\n    content = content\n      .replace(/```json\\s*/gi, '')\n      .replace(/```\\s*/g, '')\n      .trim();\n\n    content = JSON.parse(content);\n  }\n\n  // Si es un array, agregamos todas las tareas\n  if (Array.isArray(content)) {\n    allTasks.push(...content);\n  } else {\n    allTasks.push(content);\n  }\n}\n\n// Convertimos cada tarea en un item independiente de n8n\nreturn allTasks.map(task => ({\n  json: task\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        32
+      ],
+      "id": "fbeb2456-366f-4686-926c-88c860e9718e",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1072,
+        -192
+      ],
+      "id": "fcff8b29-cf07-4949-a37d-f13f616f1ab8",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "dataSourceId": {
+          "__rl": true,
+          "value": "410d7923-dfc0-80cb-bc23-000b62fbfec9",
+          "mode": "list",
+          "cachedResultName": "Error salida agente 1",
+          "cachedResultUrl": "https://app.notion.com/p/410d7923dfc08053bf41e5961941c2d1"
+        },
+        "title": "={{ $json.error.node.name }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Nombre|title",
+              "title": "={{ $json.error.node.name }}"
+            },
+            {
+              "key": "Error|rich_text",
+              "textContent": "={{ $json.error.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 3,
+      "position": [
+        320,
+        128
+      ],
+      "id": "987345e4-1e32-439c-a847-4f7b16e9a054",
+      "name": "Create a database page1",
+      "credentials": {
+        "notionApi": {
+          "id": "2ONlFLClsLm5uWDD",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "12ca1418-941a-451e-ae73-4862de1c8984",
+              "leftValue": "={{ $json.estado }}",
+              "rightValue": "Pendiente",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        384,
+        -224
+      ],
+      "id": "84da47a4-b955-40d9-9c8b-5e2c98758a29",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ids = $input.all().map(item => item.json.id);\n\nreturn ids.map(id => ({\n  json: {\n    id\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        -288
+      ],
+      "id": "33716aca-f7bc-4f42-9c3e-42f985e4c7db",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "dataSourceId": {
+          "__rl": true,
+          "value": "410d7923-dfc0-8016-ac9e-000bfed96be1",
+          "mode": "list",
+          "cachedResultName": "hilts pendientes",
+          "cachedResultUrl": "https://app.notion.com/p/410d7923dfc0809ea0f3f29c5c0fd39a"
+        },
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Id|rich_text",
+              "condition": "equals",
+              "richTextValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 3,
+      "position": [
+        736,
+        -352
+      ],
+      "id": "f5d5b084-2665-4fc8-af96-c020e4e2e6dc",
+      "name": "Get many database pages2",
+      "credentials": {
+        "notionApi": {
+          "id": "2ONlFLClsLm5uWDD",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const tareas = $input.all().map(item => item.json.property_resumen_de_tarea);\n\nreturn tareas.map((tarea, index) => ({\n  json: {\n    [`tarea_${index + 1}`]: tarea\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -192
+      ],
+      "id": "21cbf001-e16b-4d13-ba84-6878e8565d85",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "dataSourceId": {
+          "__rl": true,
+          "value": "410d7923-dfc0-80cb-bc23-000b62fbfec9",
+          "mode": "list",
+          "cachedResultName": "Error salida agente 1",
+          "cachedResultUrl": "https://app.notion.com/p/410d7923dfc08053bf41e5961941c2d1"
+        },
+        "title": "={{ $json.error.node.name }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Nombre|title",
+              "title": "={{ $json.error.node.name }}"
+            },
+            {
+              "key": "Error|rich_text",
+              "textContent": "={{ $json.error.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 3,
+      "position": [
+        1072,
+        224
+      ],
+      "id": "ae718bd2-54b4-4e8f-847c-6989ce6c23b2",
+      "name": "Create a database page2",
+      "credentials": {
+        "notionApi": {
+          "id": "2ONlFLClsLm5uWDD",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const data = JSON.parse(item.json.output);\n\n  return {\n    json: {\n      nombre: data.nombre,\n      resumen: JSON.stringify(data.resumen, null, 2),\n      id: data.id\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        -48
+      ],
+      "id": "7c375f73-0c51-4871-86db-563d00540fed",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "dataSourceId": {
+          "__rl": true,
+          "value": "410d7923-dfc0-8016-ac9e-000bfed96be1",
+          "mode": "list",
+          "cachedResultName": "hilts pendientes",
+          "cachedResultUrl": "https://app.notion.com/p/410d7923dfc0809ea0f3f29c5c0fd39a"
+        },
+        "title": "={{ $json.nombre }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Nombre|title",
+              "title": "={{ $json.nombre }}"
+            },
+            {
+              "key": "Id|rich_text",
+              "textContent": "={{ $json.id }}"
+            },
+            {
+              "key": "Resumen de tarea|rich_text",
+              "textContent": "={{ $json.resumen }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 3,
+      "position": [
+        512,
+        -48
+      ],
+      "id": "fd06c851-124e-4a78-a370-2dff0e355a24",
+      "name": "Create a database page3",
+      "retryOnFail": true,
+      "credentials": {
+        "notionApi": {
+          "id": "2ONlFLClsLm5uWDD",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $json.property_id }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Estado|status",
+              "statusValue": "En Revision (hitl)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 3,
+      "position": [
+        528,
+        400
+      ],
+      "id": "42e27a39-50b7-436e-921b-1fb1a27126e6",
+      "name": "Update a database page",
+      "credentials": {
+        "notionApi": {
+          "id": "2ONlFLClsLm5uWDD",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "facundoveronjobs@gmail.com",
+        "subject": "Estado de la tareas Pendientes",
+        "emailType": "text",
+        "message": "=La tarea:  \n{{ $json.name }} \n\nFue analizada correctamente, queda pendiente de aprobacion.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        752,
+        400
+      ],
+      "id": "03c687bd-bd2d-4b24-810e-0fc5b54e24fc",
+      "name": "Send a message",
+      "webhookId": "41b99442-ecdf-43b5-940a-9ef2c010eb90"
+    },
+    {
+      "parameters": {
+        "sendTo": "facundoveronjobs@gmail.com",
+        "subject": "Tareas en el backlog",
+        "emailType": "text",
+        "message": "=Se agrego en el backlog la siguiente tarea:\n{{ $json.name }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        32
+      ],
+      "id": "fb841527-ae62-4c03-b6eb-db37312e4c67",
+      "name": "Send a message1",
+      "webhookId": "4e91a83a-e678-451a-9264-a71d3c07bac1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get many database pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many database pages": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a database page1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many database pages1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a database page2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Get many database pages2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many database pages2": {
+      "main": [
+        [
+          {
+            "node": "Get many database pages1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Create a database page3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a database page3": {
+      "main": [
+        [
+          {
+            "node": "Update a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a database page": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a database page": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3f54ab34-b1f4-4165-9920-d39fec06d370",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00a31ead7d98e6428bc5b8c3cdaf60c4f6e5e893ec11225b3e5f49e1a68fde4b"
+  },
+  "nodeGroups": [],
+  "id": "ChBWNvacvYbrXoRg",
+  "tags": []
+}
